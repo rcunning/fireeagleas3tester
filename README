@@ -1,0 +1,39 @@
+Primary classes for use for this code are:
+FETester -- Flex app to for testing FireEagle* classes from fireeagle-as3
+
+Requires source:
+Fire Eagle AS3 classes: http://github.com/rcunning/fireeagle-as3/
+Yahoo! YOS lib: http://developer.yahoo.com/flash/yos/
+as3corelib: http://code.google.com/p/as3corelib/
+
+FETester setup:
+-Download FETester to <your extract path>
+-Download Fire Eagle AS3 classes to <your extract path>
+-Download YOS to <your extract path>
+-Download as3corelib to <your extract path>
+-Create a new workspace in Flex Builder 3+. 
+-Import FETester Flex project 
+ -Right (or control) click in Flex Navigator, choose Import...
+ -select Flex Builder/Flex Project, click Next
+ -use project folder = <your extract path>/FETester
+ -uncheck 'Use default location'
+ -Finish
+-Configure source directories
+ -Select Window->Preferences...
+ -General->Workspace->Linked Resources
+ -New... Name: FE_AS3_LIB, Location: <your extract path>
+ -Ok, Ok
+-Make sure all source paths map correctly
+ -Right (or control) click on FETester project in Flex Navigator
+ -Select Flex Build Path
+ -Verify all 3 paths are correct: src (FE AS3 classes), as3corelib (might have to change version), yos_as3_sdk (might have to change version)
+-Optionally init your OAuth values
+ -Open FETester.mxml code edit in FEProject project src
+ -Edit 'init values for OAuth params' near top
+-All set to run!
+
+
+Want TODO:
+-redo UI
+
+See http://fireeagle.yahoo.net for more info.

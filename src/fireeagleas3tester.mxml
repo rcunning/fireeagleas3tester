@@ -1,0 +1,482 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" height="100%" width="100%" initialize="init()" creationComplete="onCreationComplete()" horizontalAlign="center" verticalAlign="middle">
+
+	<mx:Script>
+		<![CDATA[
+/*
+Copyright (c) 2008 Yahoo! Inc.  All rights reserved.  
+The copyrights embodied in the content of this file are licensed under the BSD (revised) open source license
+*/
+		
+		import net.yahoo.fireeagle.*;
+		
+		// override FE servers if desired
+		//FireEagleConfig.API_SERVER = "";
+		//FireEagleConfig.AUTH_SERVER = "";
+		
+		// init values for OAuth params
+		[Bindable]
+		private var _consumerKey:String = "";
+		[Bindable]
+		private var _consumerSecret:String = "";
+		[Bindable]
+		private var _generalKey:String = "";
+		[Bindable]
+		private var _generalSecret:String = "";
+		[Bindable]
+		private var _accessKey:String = "";
+		[Bindable]
+		private var _accessSecret:String = "";
+		// temp request token info
+		[Bindable]
+		private var _requestKey:String = "";
+		[Bindable]
+		private var _requestSecret:String = "";
+		[Bindable]
+		private var _authorizeUrl:String = "";
+		// result pane bound var
+		[Bindable]
+		private var _result:String = "";
+		
+		// FE params
+		[Bindable]
+		private var _address:String = "";
+		[Bindable]
+		private var _postal:String = "";
+		[Bindable]
+		private var _city:String = "";
+		[Bindable]
+		private var _state:String = "";
+		[Bindable]
+		private var _country:String = "";
+		[Bindable]
+		private var _mnc:String = "";
+		[Bindable]
+		private var _mcc:String = "";
+		[Bindable]
+		private var _lac:String = "";
+		[Bindable]
+		private var _cellid:String = "";
+		[Bindable]
+		private var _lat:String = "";
+		[Bindable]
+		private var _lon:String = "";
+		[Bindable]
+		private var _woeid:String = "";
+		[Bindable]
+		private var _q:String = "";
+		[Bindable]
+		private var _time:String = "";
+		[Bindable]
+		private var _per_page:String = "";
+		[Bindable]
+		private var _page:String = "";
+		
+		// need to save auth object between calls
+		private var _feAuth:FireEagleAuth = null;
+		
+		
+		private function init():void
+		{
+		}
+		
+		private function onCreationComplete():void
+		{
+		}
+		
+		//
+		// FE Auth button click handlers
+		//
+		private function onNewRequest():void
+		{
+			_feAuth = new FireEagleAuth(_consumerKey, _consumerSecret);
+			
+			_feAuth.addEventListener(FireEagleEvent.REQUEST_TOKEN_SUCCESS, function(e:FireEagleEvent):void{
+				_result = FireEagleConfig.REQUEST_TOKEN_NAME + " Success: " + _feAuth.url + "\n\n" + dumpObject(e.data);
+				
+				convertToAccessButton.visible = true;
+				copyUrlToClickboardButton.visible = true;
+				authorizeUrlLbl.visible = true;
+				_authorizeUrl = _feAuth.authorizationUrl;
+				_requestKey = _feAuth.requestKey;
+				_requestSecret = _feAuth.requestSecret;
+			});
+		
+			_feAuth.addEventListener(FireEagleEvent.REQUEST_TOKEN_FAILURE, function(e:FireEagleEvent):void{
+				_result = FireEagleConfig.REQUEST_TOKEN_NAME + " Failure: " + _feAuth.url + "\n\n" + dumpObject(e.data);
+			});
+			
+			_feAuth.newRequestToken();
+			
+			updateResult(FireEagleConfig.REQUEST_TOKEN_NAME, _feAuth);
+		}
+		private function onCopyUrlToClipboard():void
+		{
+			System.setClipboard(_authorizeUrl);	
+		}
+		private function onConvertToAccess():void
+		{			
+			_feAuth.addEventListener(FireEagleEvent.ACCESS_TOKEN_SUCCESS, function(e:FireEagleEvent):void{
+				_result = FireEagleConfig.ACCESS_TOKEN_NAME + " Success: " + _feAuth.url + "\n\n" + dumpObject(e.data);
+				
+				_accessKey = _feAuth.accessKey;
+				_accessSecret = _feAuth.accessSecret;
+			});
+		
+			_feAuth.addEventListener(FireEagleEvent.ACCESS_TOKEN_FAILURE, function(e:FireEagleEvent):void{
+				_result = FireEagleConfig.ACCESS_TOKEN_NAME + " Failure: " + _feAuth.url + "\n\n" + dumpObject(e.data);
+			});
+			
+			_feAuth.convertToAccessToken();
+			
+			updateResult(FireEagleConfig.ACCESS_TOKEN_NAME, _feAuth);
+		}
+		
+		//
+		// FE Methods button click handlers
+		//
+		private function onUser():void
+		{
+			var fe:FireEagleMethod = setUpRequest("user", FireEagleEvent.USER_SUCCESS, FireEagleEvent.USER_FAILURE);
+			fe.user();
+			updateResult("user", fe);
+		}
+		private function onLookup():void
+		{
+			var fe:FireEagleMethod = setUpRequest("lookup", FireEagleEvent.LOOKUP_SUCCESS, FireEagleEvent.LOOKUP_FAILURE);
+			fe.lookup(buildArgs());
+			updateResult("lookup", fe);
+		}
+		private function onUpdate():void
+		{
+			var fe:FireEagleMethod = setUpRequest("update", FireEagleEvent.UPDATE_SUCCESS, FireEagleEvent.UPDATE_FAILURE);
+			fe.update(buildArgs());
+			updateResult("update", fe);
+		}
+		private function onRecent():void
+		{
+			var fe:FireEagleMethod = setUpRequest("recent", FireEagleEvent.RECENT_SUCCESS, FireEagleEvent.RECENT_FAILURE, true, true);
+			fe.recent(buildArgs());
+			updateResult("recent", fe);
+		}
+		private function onWithin():void
+		{
+			var fe:FireEagleMethod = setUpRequest("within", FireEagleEvent.WITHIN_SUCCESS, FireEagleEvent.WITHIN_FAILURE, true, true);
+			fe.within(buildArgs());
+			updateResult("within", fe);
+		}
+		
+		//
+		// FE Methods url-gen button click handlers
+		//
+		private function onUserUrl():void
+		{
+			var fe:FireEagleMethod = setUpRequest("", "", "", false);
+			fe.user();
+			_result = "user url:\n" + fe.url + "\n\ncurl:\n" + getCurlCommand(fe.url);
+		}
+		private function onLookupUrl():void
+		{
+			var fe:FireEagleMethod = setUpRequest("", "", "", false);
+			fe.lookup(buildArgs());
+			_result = "lookup url:\n" + fe.url + "\n\ncurl:\n" + getCurlCommand(fe.url);
+		}
+		private function onUpdateUrl():void
+		{
+			var fe:FireEagleMethod = setUpRequest("", "", "", false);
+			fe.update(buildArgs());
+			_result = "update url:\n" + fe.url + "\n\nargs:\n" + fe.args + "\n\ncurl:\n" + getCurlCommand(fe.url, fe.args);
+		}
+		private function onRecentUrl():void
+		{
+			var fe:FireEagleMethod = setUpRequest("", "", "", false, true);
+			fe.recent(buildArgs());
+			_result = "recent url:\n" + fe.url + "\n\ncurl:\n" + getCurlCommand(fe.url);
+		}
+		private function onWithinUrl():void
+		{
+			var fe:FireEagleMethod = setUpRequest("", "", "", false, true);
+			fe.within(buildArgs());
+			_result = "within url:\n" + fe.url + "\n\ncurl:\n" + getCurlCommand(fe.url);
+		}
+		
+		//
+		// response formatting helper
+		// 
+		private function updateResult(text:String, fe:FireEagleMethod):void
+		{
+			_result = "requesting "+ text + "... at " + fe.url;
+		}
+		private function getCurlCommand(url:String, args:String=""):String {
+			var c:String = "curl ";
+			if (args.length) {
+				c += "-F \""+args+"\" ";
+			}
+			c += "\""+url+"\"";
+			return c;
+		}
+		
+		//
+		// FE method call setup helpers
+		//
+		private function setUpRequest(text:String, success:String="", failure:String="", fireRequest:Boolean=true, generalKey:Boolean=false):FireEagleMethod
+		{
+			var fe:FireEagleMethod = 
+				new FireEagleMethod(_consumerKey, _consumerSecret, 
+					generalKey ? _generalKey : _accessKey, 
+					generalKey ? _generalSecret : _accessSecret, 
+					xmlRadio.selected ? FireEagleConfig.FORMAT_XML : FireEagleConfig.FORMAT_JSON);
+			fe.fireRequestAutomatically = fireRequest;
+			
+			if (success.length) {
+				fe.addEventListener(success, function(e:FireEagleEvent):void{
+					_result = text + " Success: " + fe.url + "\n\n" + dumpObject(e.data);
+				});
+			}
+			if (failure.length) {
+				fe.addEventListener(failure, function(e:FireEagleEvent):void{
+					_result = text + " Failure: " + fe.url + "\n\n" + dumpObject(e.data);
+				});
+			}
+						
+			return fe;
+		}
+		private function buildArgs():Object
+		{
+			var args:Object = new Object();
+			if (_address.length || _postal.length || _city.length || _state.length || _country.length) {
+				if (_address.length) {
+					args['address'] = _address;
+				}
+				if (_postal.length) {
+					args['postal'] = _postal;
+				}
+				if (_city.length) {
+					args['city'] = _city;
+				}
+				if (_state.length) {
+					args['state'] = _state;
+				}
+				if (_country.length) {
+					args['country'] = _country;
+				}
+			} else if (_mnc.length || _mcc.length || _lac.length || _cellid.length) {
+				args['mnc'] = _mnc;
+				args['mcc'] = _mcc;
+				args['lac'] = _lac;
+				args['cellid'] = _cellid;
+			} else if (_lat.length || _lon.length) {
+				args['lat'] = _lat;
+				args['lon'] = _lon;
+			} else if (_woeid.length) {
+				args['woeid'] = _woeid;
+			} else if (_q.length) {
+				args['q'] = _q;
+			}
+			if (_time.length) {
+				args['time'] = _time;
+			}
+			if (_per_page.length) {
+				args['per_page'] = _per_page;
+			}
+			if (_page.length) {
+				args['page'] = _page;
+			}
+			return args;
+		}
+		
+		//
+		// output format helper
+		//
+		private function dumpObject(o:Object, depth:String=""):String
+		{
+			if (o is String || o is Number || o is XML) {
+				return depth + o.toString() + "\n";
+			}
+			var s:String = "";
+			for (var i:String in o) {
+				if ((o[i] is Object || o[i] is Array) && !(o[i] is String || o[i] is Number || o[i] is XML)) {
+					s += depth + i + "=\n";
+					s += dumpObject(o[i], depth + "  ");
+				} else {
+					s += depth + i + "=" + o[i] + "\n";
+				}
+			}
+			return s;
+		}
+		
+		]]>
+	</mx:Script>
+		
+	<mx:HBox width="100%" height="100%">
+		<mx:VBox width="100%" height="100%">
+			<mx:Label text="Fire Method:" />
+			<mx:HBox>
+				<mx:Button id="userButton" label="user" click="onUser()" />
+				<mx:Button id="lookupButton" label="lookup" click="onLookup()" />
+				<mx:Button id="updateButton" label="update" click="onUpdate()" />
+				<mx:Button id="recentButton" label="recent" click="onRecent()" />
+				<mx:Button id="withinButton" label="within" click="onWithin()" />
+			</mx:HBox>
+			<mx:Label text="Get URL and curl command only:" />
+			<mx:HBox>
+				<mx:Button id="userButtonUrl" label="user" click="onUserUrl()" />
+				<mx:Button id="lookupButtonUrl" label="lookup" click="onLookupUrl()" />
+				<mx:Button id="updateButtonUrl" label="update" click="onUpdateUrl()" />
+				<mx:Button id="recentButtonUrl" label="recent" click="onRecentUrl()" />
+				<mx:Button id="withinButtonUrl" label="within" click="onWithinUrl()" />
+			</mx:HBox>
+			
+			<mx:Spacer height="5"/>
+			<mx:Label text="OAuth:" />
+			<mx:Panel headerHeight="10" horizontalCenter="0" >
+				<mx:HBox>
+					<mx:VBox>
+						<mx:Label text="consumerKey" />
+						<mx:TextInput id="consumerKeyTxt" text="{_consumerKey}" valueCommit="{_consumerKey = consumerKeyTxt.text;}"/>
+					</mx:VBox>
+					<mx:VBox>
+						<mx:Label text="consumerSecret" />
+						<mx:TextInput id="consumerSecretTxt" text="{_consumerSecret}" valueCommit="{_consumerSecret = consumerSecretTxt.text;}"/>
+					</mx:VBox>
+				</mx:HBox>
+				<mx:HBox>
+					<mx:VBox>
+						<mx:Label text="generalKey" />
+						<mx:TextInput id="generalKeyTxt" text="{_generalKey}" valueCommit="{_generalKey = generalKeyTxt.text;}"/>
+					</mx:VBox>
+					<mx:VBox>
+						<mx:Label text="generalSecret" />
+						<mx:TextInput id="generalSecretTxt" text="{_generalSecret}" valueCommit="{_generalSecret = generalSecretTxt.text;}"/>
+					</mx:VBox>
+				</mx:HBox>
+				<mx:HBox>
+					<mx:VBox>
+						<mx:Label text="accessKey" />
+						<mx:TextInput id="accessKeyTxt" text="{_accessKey}" valueCommit="{_accessKey = accessKeyTxt.text;}"/>
+					</mx:VBox>
+					<mx:VBox>
+						<mx:Label text="accessSecret" />
+						<mx:TextInput id="accessSecretTxt" text="{_accessSecret}" valueCommit="{_accessSecret = accessSecretTxt.text;}"/>
+					</mx:VBox>
+				</mx:HBox>
+				<mx:VBox>
+					<mx:HBox>
+						<mx:Button id="newRequestButton" label="Get New Request Token" click="onNewRequest()" />
+						<mx:Button id="copyUrlToClickboardButton" label="Copy Url to Clipboard" click="onCopyUrlToClipboard()" visible="false" /> 
+						<mx:Button id="convertToAccessButton" label="Convert to Access Token" click="onConvertToAccess()" visible="false" toolTip="{'request_key='+_requestKey+'\nrequest_secret='+_requestSecret}"/>
+					</mx:HBox>
+					<mx:Label id="authorizeUrlLbl" visible="false" text="{_authorizeUrl}" selectable="true" />
+				</mx:VBox>
+			</mx:Panel>
+			
+			<mx:Spacer height="5"/>
+			<mx:Label text="Result Format:" />
+			<mx:HBox>
+				<mx:RadioButton label="JSON" />
+				<mx:RadioButton id="xmlRadio" label="XML" selected="true" />
+			</mx:HBox>
+			
+			<mx:Spacer height="5"/>
+			<mx:Label text="Parameters:" />
+			<mx:Panel headerHeight="10" horizontalCenter="0" >
+				<mx:HBox>
+					<mx:VBox>
+						<mx:Label text="address" toolTip="street address (may contain a full address, but will be combined with postal, city, state, and country when available)" />
+						<mx:TextInput id="addressTxt" text="{_address}" valueCommit="{_address = addressTxt.text;}"/>
+					</mx:VBox>
+					<mx:VBox>
+						<mx:Label text="postal" toolTip="a ZIP or postal code (combined with address, city, state, and country when available)" />
+						<mx:TextInput id="postalTxt" text="{_postal}" valueCommit="{_postal = postalTxt.text;}"/>
+					</mx:VBox>
+					<mx:VBox>
+						<mx:Label text="city" toolTip="city (combined with address, postal, state, and country when available)" />
+						<mx:TextInput id="cityTxt" text="{_city}" valueCommit="{_city = cityTxt.text;}"/>
+					</mx:VBox>
+				</mx:HBox>
+				<mx:HBox>
+					<mx:VBox>
+						<mx:Label text="state" toolTip="state (combined with address, postal, city, and country when available)" />
+						<mx:TextInput id="stateTxt" text="{_state}" valueCommit="{_state = stateTxt.text;}"/>
+					</mx:VBox>
+					<mx:VBox>
+						<mx:Label text="country" toolTip="country (combined with address, postal, city, and state when available)" />
+						<mx:TextInput id="countryTxt" text="{_country}" valueCommit="{_country = countryTxt.text;}"/>
+					</mx:VBox>
+				</mx:HBox>
+			</mx:Panel>
+			<mx:Panel headerHeight="10" horizontalCenter="0" >
+				<mx:HBox>
+					<mx:VBox>
+						<mx:Label text="mnc" toolTip="cell tower information, integer." />
+						<mx:TextInput id="mncTxt" text="{_mnc}" valueCommit="{_mnc = mncTxt.text;}"/>
+					</mx:VBox>
+					<mx:VBox>
+						<mx:Label text="mcc" toolTip="cell tower information, integer." />
+						<mx:TextInput id="mccTxt" text="{_mcc}" valueCommit="{_mcc = mccTxt.text;}"/>
+					</mx:VBox>
+					<mx:VBox>
+						<mx:Label text="lac" toolTip="cell tower information, integer." />
+						<mx:TextInput id="lacTxt" text="{_lac}" valueCommit="{_lac = lacTxt.text;}"/>
+					</mx:VBox>
+					<mx:VBox>
+						<mx:Label text="cellid" toolTip="cell tower information, integer." />
+						<mx:TextInput id="cellidTxt" text="{_cellid}" valueCommit="{_cellid = cellidTxt.text;}"/>
+					</mx:VBox>
+				</mx:HBox>
+			</mx:Panel>
+			<mx:HBox>	
+				<mx:Panel headerHeight="10" horizontalCenter="0" >
+					<mx:HBox>
+						<mx:VBox>
+							<mx:Label text="lat" toolTip="Latitude (in decimal degrees)." />
+							<mx:TextInput id="latTxt" text="{_lat}" valueCommit="{_lat = latTxt.text;}"/>
+						</mx:VBox>
+						<mx:VBox>
+							<mx:Label text="lon" toolTip="Longitude (in decimal degrees)." />
+							<mx:TextInput id="lonTxt" text="{_lon}" valueCommit="{_lon = lonTxt.text;}"/>
+						</mx:VBox>
+					</mx:HBox>
+				</mx:Panel>
+				<mx:Panel headerHeight="10" horizontalCenter="0" >
+					<mx:HBox>
+						<mx:VBox>
+							<mx:Label text="woeid" toolTip="Where On Earth ID" />
+							<mx:TextInput id="woeidTxt" text="{_woeid}" valueCommit="{_woeid = woeidTxt.text;}"/>
+						</mx:VBox>
+					</mx:HBox>
+				</mx:Panel>
+				<mx:Panel headerHeight="10" horizontalCenter="0" >
+					<mx:HBox>
+						<mx:VBox>
+							<mx:Label text="q" toolTip="Free-text fallback containing user input. Lat/lon pairs and geometries will be extracted if possible, otherwise this string will be geocoded as-is." />
+							<mx:TextInput id="qTxt" text="{_q}" valueCommit="{_q = qTxt.text;}"/>
+						</mx:VBox>
+					</mx:HBox>
+				</mx:Panel>
+			</mx:HBox>
+			<mx:Panel headerHeight="10" horizontalCenter="0" >
+				<mx:HBox>
+					<mx:VBox>
+						<mx:Label text="time" toolTip="(default: now) : the time to start looking at recent updates from." />
+						<mx:TextInput id="timeTxt" text="{_time}" valueCommit="{_time = timeTxt.text;}"/>
+					</mx:VBox>
+					<mx:VBox>
+						<mx:Label text="per_page" toolTip="(default: 10) : number of users to return per page." />
+						<mx:TextInput id="per_pageTxt" text="{_per_page}" valueCommit="{_per_page = per_pageTxt.text;}"/>
+					</mx:VBox>
+					<mx:VBox>
+						<mx:Label text="page" toolTip="(default: 0) : the page number at which to start returning the list of users, pages are 0-indexed, each page contains the per_page number of users." />
+						<mx:TextInput id="pageTxt" text="{_page}" valueCommit="{_page = pageTxt.text;}"/>
+					</mx:VBox>
+				</mx:HBox>
+			</mx:Panel>
+		</mx:VBox>
+		
+		<mx:VBox width="100%" height="100%">
+			<mx:Label text="Result:" />
+			<mx:TextArea id="resultTxt" text="{_result}" wordWrap="false" width="100%" height="100%" />
+		</mx:VBox>
+	</mx:HBox>		
+	
+</mx:Application>
