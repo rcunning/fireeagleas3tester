@@ -11,22 +11,22 @@ The copyrights embodied in the content of this file are licensed under the BSD (
 		import net.yahoo.fireeagle.*;
 		
 		// override FE servers if desired
-		//FireEagleConfig.API_SERVER = "";
-		//FireEagleConfig.AUTH_SERVER = "";
+		FireEagleConfig.API_SERVER = "http://justadvance.sfsoma.corp.yahoo.com:3000";
+		FireEagleConfig.AUTH_SERVER = "http://justadvance.sfsoma.corp.yahoo.com:3000";
 		
 		// init values for OAuth params
 		[Bindable]
-		private var _consumerKey:String = "";
+		private var _consumerKey:String = "e9ob71so4aq9";
 		[Bindable]
-		private var _consumerSecret:String = "";
+		private var _consumerSecret:String = "7d4n0gscl38me008oooq6xatwim5k1re";
 		[Bindable]
-		private var _generalKey:String = "";
+		private var _generalKey:String = "lqdo3temijaf";
 		[Bindable]
-		private var _generalSecret:String = "";
+		private var _generalSecret:String = "yvxccfuyrllx7logt77sax4742kl4wv7";
 		[Bindable]
-		private var _accessKey:String = "";
+		private var _accessKey:String = "j15kk40go54u";
 		[Bindable]
-		private var _accessSecret:String = "";
+		private var _accessSecret:String = "h72xg0hd9taa5qb7lvo7uo7sgs66le43";
 		// temp request token info
 		[Bindable]
 		private var _requestKey:String = "";
@@ -91,19 +91,15 @@ The copyrights embodied in the content of this file are licensed under the BSD (
 		{
 			_feAuth = new FireEagleAuth(_consumerKey, _consumerSecret);
 			
+			addListeners(_feAuth, FireEagleConfig.REQUEST_TOKEN_NAME, FireEagleEvent.REQUEST_TOKEN_SUCCESS, FireEagleEvent.REQUEST_TOKEN_FAILURE);
+
 			_feAuth.addEventListener(FireEagleEvent.REQUEST_TOKEN_SUCCESS, function(e:FireEagleEvent):void{
-				_result = FireEagleConfig.REQUEST_TOKEN_NAME + " Success: " + _feAuth.url + "\n\n" + dumpObject(e.data);
-				
 				convertToAccessButton.visible = true;
 				copyUrlToClickboardButton.visible = true;
 				authorizeUrlLbl.visible = true;
 				_authorizeUrl = _feAuth.authorizationUrl;
 				_requestKey = _feAuth.requestKey;
 				_requestSecret = _feAuth.requestSecret;
-			});
-		
-			_feAuth.addEventListener(FireEagleEvent.REQUEST_TOKEN_FAILURE, function(e:FireEagleEvent):void{
-				_result = FireEagleConfig.REQUEST_TOKEN_NAME + " Failure: " + _feAuth.url + "\n\n" + dumpObject(e.data);
 			});
 			
 			_feAuth.newRequestToken();
@@ -115,16 +111,12 @@ The copyrights embodied in the content of this file are licensed under the BSD (
 			System.setClipboard(_authorizeUrl);	
 		}
 		private function onConvertToAccess():void
-		{			
+		{
+			addListeners(_feAuth, FireEagleConfig.ACCESS_TOKEN_NAME, FireEagleEvent.ACCESS_TOKEN_SUCCESS, FireEagleEvent.ACCESS_TOKEN_FAILURE);
+
 			_feAuth.addEventListener(FireEagleEvent.ACCESS_TOKEN_SUCCESS, function(e:FireEagleEvent):void{
-				_result = FireEagleConfig.ACCESS_TOKEN_NAME + " Success: " + _feAuth.url + "\n\n" + dumpObject(e.data);
-				
 				_accessKey = _feAuth.accessKey;
 				_accessSecret = _feAuth.accessSecret;
-			});
-		
-			_feAuth.addEventListener(FireEagleEvent.ACCESS_TOKEN_FAILURE, function(e:FireEagleEvent):void{
-				_result = FireEagleConfig.ACCESS_TOKEN_NAME + " Failure: " + _feAuth.url + "\n\n" + dumpObject(e.data);
 			});
 			
 			_feAuth.convertToAccessToken();
@@ -173,31 +165,31 @@ The copyrights embodied in the content of this file are licensed under the BSD (
 		{
 			var fe:FireEagleMethod = setUpRequest("", "", "", false);
 			fe.user();
-			_result = "user url:\n" + fe.url + "\n\ncurl:\n" + getCurlCommand(fe.url);
+			_result = formatResult("user", fe);
 		}
 		private function onLookupUrl():void
 		{
 			var fe:FireEagleMethod = setUpRequest("", "", "", false);
 			fe.lookup(buildArgs());
-			_result = "lookup url:\n" + fe.url + "\n\ncurl:\n" + getCurlCommand(fe.url);
+			_result = formatResult("lookup", fe);
 		}
 		private function onUpdateUrl():void
 		{
 			var fe:FireEagleMethod = setUpRequest("", "", "", false);
 			fe.update(buildArgs());
-			_result = "update url:\n" + fe.url + "\n\nargs:\n" + fe.args + "\n\ncurl:\n" + getCurlCommand(fe.url, fe.args);
+			_result = formatResult("update", fe);
 		}
 		private function onRecentUrl():void
 		{
 			var fe:FireEagleMethod = setUpRequest("", "", "", false, true);
 			fe.recent(buildArgs());
-			_result = "recent url:\n" + fe.url + "\n\ncurl:\n" + getCurlCommand(fe.url);
+			_result = formatResult("recent", fe);
 		}
 		private function onWithinUrl():void
 		{
 			var fe:FireEagleMethod = setUpRequest("", "", "", false, true);
 			fe.within(buildArgs());
-			_result = "within url:\n" + fe.url + "\n\ncurl:\n" + getCurlCommand(fe.url);
+			_result = formatResult("within", fe);
 		}
 		
 		//
@@ -205,14 +197,23 @@ The copyrights embodied in the content of this file are licensed under the BSD (
 		// 
 		private function updateResult(text:String, fe:FireEagleMethod):void
 		{
-			_result = "requesting "+ text + "... at " + fe.url;
+			_result = "requesting "+ formatResult(text, fe);
 		}
-		private function getCurlCommand(url:String, args:String=""):String {
-			var c:String = "curl ";
-			if (args.length) {
-				c += "-F \""+args+"\" ";
+		private function formatResult(text:String, fe:FireEagleMethod):String
+		{
+			var c:String = text + " url:\n" + fe.url;
+			if (fe.args.length) {
+				c += "\n\nargs:\n"+fe.args;
 			}
-			c += "\""+url+"\"";
+			c += "\n\ncurl:\n" + getCurlCommand(fe);
+			return c;
+		}
+		private function getCurlCommand(fe:FireEagleMethod):String {
+			var c:String = "curl ";
+			if (fe.args.length) {
+				c += "-F '"+fe.args+"' ";
+			}
+			c += "'"+fe.url+"'";
 			return c;
 		}
 		
@@ -228,18 +229,22 @@ The copyrights embodied in the content of this file are licensed under the BSD (
 					xmlRadio.selected ? FireEagleConfig.FORMAT_XML : FireEagleConfig.FORMAT_JSON);
 			fe.fireRequestAutomatically = fireRequest;
 			
+			addListeners(fe, text, success, failure);
+
+			return fe;
+		}
+		private function addListeners(fe:FireEagleMethod, text:String, success:String="", failure:String=""):void
+		{
 			if (success.length) {
 				fe.addEventListener(success, function(e:FireEagleEvent):void{
-					_result = text + " Success: " + fe.url + "\n\n" + dumpObject(e.data);
+					_result = formatResult(text + " Success", fe) + "\n\nresponse:\n" + dumpObject(e.data);
 				});
 			}
 			if (failure.length) {
 				fe.addEventListener(failure, function(e:FireEagleEvent):void{
-					_result = text + " Failure: " + fe.url + "\n\n" + dumpObject(e.data);
+					_result = formatResult(text + " Failure", fe) + "\n\n" + dumpObject(e.data);
 				});
 			}
-						
-			return fe;
 		}
 		private function buildArgs():Object
 		{
@@ -371,10 +376,14 @@ The copyrights embodied in the content of this file are licensed under the BSD (
 			</mx:Panel>
 			
 			<mx:Spacer height="5"/>
-			<mx:Label text="Result Format:" />
 			<mx:HBox>
-				<mx:RadioButton label="JSON" />
-				<mx:RadioButton id="xmlRadio" label="XML" selected="true" />
+			<mx:VBox>
+				<mx:Label text="Result Format:" />
+				<mx:HBox>
+					<mx:RadioButton label="JSON"/>
+					<mx:RadioButton id="xmlRadio" label="XML" selected="true"/>
+				</mx:HBox>
+			</mx:VBox>
 			</mx:HBox>
 			
 			<mx:Spacer height="5"/>
