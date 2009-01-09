@@ -12,22 +12,22 @@ The copyrights embodied in the content of this file are licensed under the BSD (
 		import com.yahoo.oauth.OAuthSignatureMethod_PLAINTEXT; // only used if you switch from the default SHA1 signature method
 		
 		// override FE servers if desired
-		//FireEagleConfig.API_SERVER = "";
-		//FireEagleConfig.AUTH_SERVER = "";
+		FireEagleConfig.API_SERVER = "http://justadvance.sfsoma.corp.yahoo.com:3000";
+		FireEagleConfig.AUTH_SERVER = "http://justadvance.sfsoma.corp.yahoo.com:3000";
 		
 		// init values for OAuth params
 		[Bindable]
-		private var _consumerKey:String = "";
+		private var _consumerKey:String = "e9ob71so4aq9";
 		[Bindable]
-		private var _consumerSecret:String = "";
+		private var _consumerSecret:String = "7d4n0gscl38me008oooq6xatwim5k1re";
 		[Bindable]
-		private var _generalKey:String = "";
+		private var _generalKey:String = "lqdo3temijaf";
 		[Bindable]
-		private var _generalSecret:String = "";
+		private var _generalSecret:String = "yvxccfuyrllx7logt77sax4742kl4wv7";
 		[Bindable]
-		private var _accessKey:String = "";
+		private var _accessKey:String = "j15kk40go54u";
 		[Bindable]
-		private var _accessSecret:String = "";
+		private var _accessSecret:String = "h72xg0hd9taa5qb7lvo7uo7sgs66le43";
 		// temp request token info
 		[Bindable]
 		private var _requestKey:String = "";
@@ -220,6 +220,10 @@ The copyrights embodied in the content of this file are licensed under the BSD (
 			c += "'"+fe.url+"'";
 			return c;
 		}
+		private function formatWithLinebreaks(s:String):String
+		{
+			return s.split(",").join(",\n");
+		}
 		
 		//
 		// FE method call setup helpers
@@ -245,6 +249,9 @@ The copyrights embodied in the content of this file are licensed under the BSD (
 			if (success.length) {
 				fe.addEventListener(success, function(e:FireEagleEvent):void{
 					_result = formatResult(text + " Success", fe) + "\n\nresponse:\n" + dumpObject(e.data);
+					if (e.response != null) {
+						_result += "\n\n"+formatWithLinebreaks(e.response.toString());
+					}
 				});
 			}
 			if (failure.length) {
