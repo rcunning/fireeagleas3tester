@@ -12,22 +12,22 @@ The copyrights embodied in the content of this file are licensed under the BSD (
 		import com.yahoo.oauth.OAuthSignatureMethod_PLAINTEXT; // only used if you switch from the default SHA1 signature method
 		
 		// override FE servers if desired
-		FireEagleConfig.API_SERVER = "http://justadvance.sfsoma.corp.yahoo.com:3000";
-		FireEagleConfig.AUTH_SERVER = "http://justadvance.sfsoma.corp.yahoo.com:3000";
+		//FireEagleConfig.API_SERVER = "";
+		//FireEagleConfig.AUTH_SERVER = "";
 		
 		// init values for OAuth params
 		[Bindable]
-		private var _consumerKey:String = "e9ob71so4aq9";
+		private var _consumerKey:String = "";
 		[Bindable]
-		private var _consumerSecret:String = "7d4n0gscl38me008oooq6xatwim5k1re";
+		private var _consumerSecret:String = "";
 		[Bindable]
-		private var _generalKey:String = "lqdo3temijaf";
+		private var _generalKey:String = "";
 		[Bindable]
-		private var _generalSecret:String = "yvxccfuyrllx7logt77sax4742kl4wv7";
+		private var _generalSecret:String = "";
 		[Bindable]
-		private var _accessKey:String = "j15kk40go54u";
+		private var _accessKey:String = "";
 		[Bindable]
-		private var _accessSecret:String = "h72xg0hd9taa5qb7lvo7uo7sgs66le43";
+		private var _accessSecret:String = "";
 		// temp request token info
 		[Bindable]
 		private var _requestKey:String = "";
