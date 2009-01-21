@@ -1,14 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+Copyright (c) 2008 Yahoo! Inc.  All rights reserved.  
+The copyrights embodied in the content of this file are licensed under the BSD (revised) open source license
+-->
 <mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" height="100%" width="100%" initialize="init()" creationComplete="onCreationComplete()" horizontalAlign="center" verticalAlign="middle">
 
 	<mx:Script>
 		<![CDATA[
-/*
-Copyright (c) 2008 Yahoo! Inc.  All rights reserved.  
-The copyrights embodied in the content of this file are licensed under the BSD (revised) open source license
-*/
 		
 		import net.yahoo.fireeagle.*;
+		import net.yahoo.fireeagle.realtime.*;
 		import com.yahoo.oauth.OAuthSignatureMethod_PLAINTEXT; // only used if you switch from the default SHA1 signature method
 		
 		// override FE servers if desired
@@ -76,6 +77,7 @@ The copyrights embodied in the content of this file are licensed under the BSD (
 		// need to save auth object between calls
 		private var _feAuth:FireEagleAuth = null;
 		
+		private var _realtime:IFireEagleSubscribe;
 		
 		private function init():void
 		{
@@ -197,6 +199,53 @@ The copyrights embodied in the content of this file are licensed under the BSD (
 		}
 		
 		//
+		// FE poll methods
+		//
+		private function initRecentPoll():void
+		{
+			if (_realtime == null) {
+				_realtime = new RecentPoller(_consumerKey, _consumerSecret, _generalKey, _generalSecret, Number(pollTime.text)*1000);
+				_realtime.addEventListener(FireEagleEvent.RECENT_SUCCESS, function(e:FireEagleEvent):void{
+					_result = "Recent Poll Success" + "\n\nresponse("+new Date().toString()+"):\n" + dumpObject(e.data);
+					if (e.response != null) {
+						_result += "\n\n"+formatWithLinebreaks(e.response.toString());
+					}
+				});
+				_realtime.addEventListener(FireEagleEvent.RECENT_FAILURE, function(e:FireEagleEvent):void{
+					_result = "Recent Poll Failure" + "\n\n" + dumpObject(e.data);
+				});
+				_realtime.addEventListener(FireEagleEvent.USER_SUCCESS, function(e:FireEagleEvent):void{
+					_result = "User Poll Success" + "\n\nresponse("+new Date().toString()+"):\n" + dumpObject(e.data);
+					if (e.response != null) {
+						_result += "\n\n"+formatWithLinebreaks(e.response.toString());
+					}
+				});
+				_realtime.addEventListener(FireEagleEvent.USER_FAILURE, function(e:FireEagleEvent):void{
+					_result = "User Poll Failure" + "\n\n" + dumpObject(e.data);
+				});
+			}
+		}
+		private function onRecentPoll():void
+		{
+			initRecentPoll();
+			
+			if (_realtime.running) {
+				_realtime.stop();
+				recentPollButton.label = "recent";
+			} else {
+				_realtime.start();
+				recentPollButton.label = "stop recent";
+				_result = "polling recent";
+			}
+		}
+		private function onSubscribe():void
+		{
+			initRecentPoll();
+			
+			_realtime.subscribe(_accessKey, _accessSecret);
+		}
+		
+		//
 		// response formatting helper
 		// 
 		private function updateResult(text:String, fe:FireEagleMethod):void
@@ -205,19 +254,27 @@ The copyrights embodied in the content of this file are licensed under the BSD (
 		}
 		private function formatResult(text:String, fe:FireEagleMethod):String
 		{
-			var c:String = text + " url:\n" + fe.url;
+			var c:String = text;
+			if (fe.url.length) {
+				c += " url:\n" + fe.url;
+			}
 			if (fe.args.length) {
 				c += "\n\nargs:\n"+fe.args;
 			}
-			c += "\n\ncurl:\n" + getCurlCommand(fe);
+			if (getCurlCommand(fe).length) {
+				c += "\n\ncurl:\n" + getCurlCommand(fe);
+			}
 			return c;
 		}
 		private function getCurlCommand(fe:FireEagleMethod):String {
-			var c:String = "curl ";
-			if (fe.args.length) {
-				c += "-F '"+fe.args+"' ";
+			var c:String = "";
+			if (fe.url.length) {
+				c = "curl ";
+				if (fe.args.length) {
+					c += "-F '"+fe.args+"' ";
+				}
+				c += "'"+fe.url+"'";
 			}
-			c += "'"+fe.url+"'";
 			return c;
 		}
 		private function formatWithLinebreaks(s:String):String
@@ -234,7 +291,7 @@ The copyrights embodied in the content of this file are licensed under the BSD (
 				new FireEagleMethod(_consumerKey, _consumerSecret, 
 					generalKey ? _generalKey : _accessKey, 
 					generalKey ? _generalSecret : _accessSecret, 
-					xmlRadio.selected ? FireEagleConfig.FORMAT_XML : FireEagleConfig.FORMAT_JSON);
+					jsonRadio.selected ? FireEagleConfig.FORMAT_JSON : FireEagleConfig.FORMAT_XML);
 			fe.fireRequestAutomatically = fireRequest;
 			if (!sha1Radio.selected) {
 				fe.signatureMethod = new OAuthSignatureMethod_PLAINTEXT();
@@ -248,7 +305,7 @@ The copyrights embodied in the content of this file are licensed under the BSD (
 		{
 			if (success.length) {
 				fe.addEventListener(success, function(e:FireEagleEvent):void{
-					_result = formatResult(text + " Success", fe) + "\n\nresponse:\n" + dumpObject(e.data);
+					_result = formatResult(text + " Success", fe) + "\n\nresponse("+new Date().toString()+"):\n" + dumpObject(e.data);
 					if (e.response != null) {
 						_result += "\n\n"+formatWithLinebreaks(e.response.toString());
 					}
@@ -339,11 +396,18 @@ The copyrights embodied in the content of this file are licensed under the BSD (
 			</mx:HBox>
 			<mx:Label text="Get URL and curl command only:" />
 			<mx:HBox>
-				<mx:Button id="userButtonUrl" label="user" click="onUserUrl()" />
-				<mx:Button id="lookupButtonUrl" label="lookup" click="onLookupUrl()" />
-				<mx:Button id="updateButtonUrl" label="update" click="onUpdateUrl()" />
-				<mx:Button id="recentButtonUrl" label="recent" click="onRecentUrl()" />
-				<mx:Button id="withinButtonUrl" label="within" click="onWithinUrl()" />
+				<mx:Button id="userUrlButton" label="user" click="onUserUrl()" />
+				<mx:Button id="lookupUrlButton" label="lookup" click="onLookupUrl()" />
+				<mx:Button id="updateUrlButton" label="update" click="onUpdateUrl()" />
+				<mx:Button id="recentUrlButton" label="recent" click="onRecentUrl()" />
+				<mx:Button id="withinUrlButton" label="within" click="onWithinUrl()" />
+			</mx:HBox>
+			<mx:Label text="Start Polling:" />
+			<mx:HBox>
+				<mx:Button id="recentPollButton" label="recent" click="onRecentPoll()" />
+				<mx:Button id="subscribeButton" label="subscribe user" click="onSubscribe()" />
+				<mx:Label text="Delay(seconds):" />
+				<mx:TextInput id="pollTime" restrict="0123456789" text="10" />
 			</mx:HBox>
 			
 			<mx:Spacer height="5"/>
@@ -394,15 +458,15 @@ The copyrights embodied in the content of this file are licensed under the BSD (
 			<mx:VBox>
 				<mx:Label text="Result Format:" />
 				<mx:HBox>
-					<mx:RadioButton label="JSON" groupName="resultformat"/>
-					<mx:RadioButton id="xmlRadio" label="XML" selected="true" groupName="resultformat"/>
+					<mx:RadioButton id="jsonRadio" label="JSON" selected="true" groupName="resultformat"/>
+					<mx:RadioButton label="XML" groupName="resultformat"/>
 				</mx:HBox>
 			</mx:VBox>
 			<mx:VBox>
 				<mx:Label text="Signature Method:" />
 				<mx:HBox>
-					<mx:RadioButton label="Plain Text" groupName="signaturemethod"/>
 					<mx:RadioButton id="sha1Radio" label="SHA1" selected="true" groupName="signaturemethod"/>
+					<mx:RadioButton label="Plain Text" groupName="signaturemethod"/>
 				</mx:HBox>
 			</mx:VBox>
 			</mx:HBox>

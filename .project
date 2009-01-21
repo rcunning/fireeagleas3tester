@@ -17,12 +17,7 @@
 	</natures>
 	<linkedResources>
 		<link>
-			<name>[source path] as3corelib-.92.1-src</name>
-			<type>2</type>
-			<locationURI>FE_AS%33_TESTER/as%33corelib-.%39%32.1/src</locationURI>
-		</link>
-		<link>
-			<name>[source path] fireeagle-as3-src</name>
+			<name>[source path] src</name>
 			<type>2</type>
 			<locationURI>FE_AS%33_TESTER/fireeagle-as%33/src</locationURI>
 		</link>
