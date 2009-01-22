@@ -10,10 +10,10 @@ fireeagleas3tester setup:
 -Download Fire Eagle AS3 classes to <your extract path>
 -Download YOS to <your extract path>
 -Create a new workspace in Flex Builder 3+. 
--Import FETester Flex project 
+-Import fireeagleas3tester Flex project 
  -Right (or control) click in Flex Navigator, choose Import...
  -select Flex Builder/Flex Project, click Next
- -use project folder = <your extract path>/FETester
+ -use project folder = <your extract path>/fireeagleas3tester
  -uncheck 'Use default location'
  -Finish
 -Configure source directories
@@ -26,7 +26,7 @@ fireeagleas3tester setup:
  -Select Flex Build Path
  -Verify all paths are correct: src (FE AS3 classes), yos_as3_sdk (might have to change version)
 -Optionally init your OAuth values
- -Open FETester.mxml code edit in FEProject project src
+ -Open fireeagleas3tester.mxml code edit in fireeagleas3tester project src
  -Edit 'init values for OAuth params' near top
 -All set to run!
 
