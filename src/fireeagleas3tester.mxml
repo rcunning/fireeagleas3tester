@@ -12,10 +12,6 @@ The copyrights embodied in the content of this file are licensed under the BSD (
 		import net.yahoo.fireeagle.realtime.*;
 		import com.yahoo.oauth.OAuthSignatureMethod_PLAINTEXT; // only used if you switch from the default SHA1 signature method
 		
-		// override FE servers if desired
-		//FireEagleConfig.API_SERVER = "";
-		//FireEagleConfig.AUTH_SERVER = "";
-		
 		// init values for OAuth params
 		[Bindable]
 		private var _consumerKey:String = "";
@@ -29,6 +25,12 @@ The copyrights embodied in the content of this file are licensed under the BSD (
 		private var _accessKey:String = "";
 		[Bindable]
 		private var _accessSecret:String = "";
+		// xmpp credentials
+		[Bindable]
+		private var _jidXMPP:String = "";
+		[Bindable]
+		private var _passwordXMPP:String = "";
+		
 		// temp request token info
 		[Bindable]
 		private var _requestKey:String = "";
@@ -199,12 +201,15 @@ The copyrights embodied in the content of this file are licensed under the BSD (
 		}
 		
 		//
-		// FE poll methods
+		// FE poll
 		//
 		private function initRecentPoll():void
 		{
+			unInitXMPP();
+			
 			if (_realtime == null) {
-				_realtime = new RecentPoller(_consumerKey, _consumerSecret, _generalKey, _generalSecret, Number(pollTime.text)*1000);
+				_realtime = new RecentPoller(_consumerKey, _consumerSecret, _generalKey, _generalSecret, 
+					Number(pollTime.text)*1000, jsonRadio.selected ? FireEagleConfig.FORMAT_JSON : FireEagleConfig.FORMAT_XML);
 				_realtime.addEventListener(FireEagleEvent.RECENT_SUCCESS, function(e:FireEagleEvent):void{
 					_result = "Recent Poll Success" + "\n\nresponse("+new Date().toString()+"):\n" + dumpObject(e.data);
 					if (e.response != null) {
@@ -225,6 +230,14 @@ The copyrights embodied in the content of this file are licensed under the BSD (
 				});
 			}
 		}
+		private function unInitRecentPoll():void
+		{
+			if (_realtime != null && _realtime is RecentPoller) {
+				_realtime.stop();
+				recentPollButton.label = "recent";
+				_realtime = null;
+			}
+		}
 		private function onRecentPoll():void
 		{
 			initRecentPoll();
@@ -238,9 +251,64 @@ The copyrights embodied in the content of this file are licensed under the BSD (
 				_result = "polling recent";
 			}
 		}
-		private function onSubscribe():void
+		private function onSubscribePoll():void
 		{
 			initRecentPoll();
+			
+			_realtime.subscribe(_accessKey, _accessSecret);
+		}
+		//
+		// FE XMPP
+		//
+		private function initXMPP():void
+		{
+			unInitRecentPoll();
+			
+			if (_realtime == null) {
+				_realtime = new XMPPConnection(_jidXMPP, _passwordXMPP, null, _consumerKey, _consumerSecret);
+				var f:Function = function(e:RealTimeEvent):void{
+					_result += "\n" + e.type;
+				};
+				_realtime.addEventListener(RealTimeEvent.XMPP_AUTH_FAIL, f);
+				_realtime.addEventListener(RealTimeEvent.XMPP_AUTH_SUCCESS, f);
+				_realtime.addEventListener(RealTimeEvent.XMPP_CONNECT, f);
+				_realtime.addEventListener(RealTimeEvent.XMPP_CONNECT_FAIL, f);
+				_realtime.addEventListener(RealTimeEvent.XMPP_DISCONNECT, f);
+				_realtime.addEventListener(RealTimeEvent.XMPP_SECURE, f);
+				_realtime.addEventListener(RealTimeEvent.XMPP_SESSION, f);
+				
+				_realtime.addEventListener(FireEagleEvent.USER_SUCCESS, function(e:FireEagleEvent):void{
+					_result = "User XMPP Update received" + "\n\nresponse("+new Date().toString()+"):\n" + dumpObject(e.data);
+					if (e.response != null) {
+						_result += "\n\n"+formatWithLinebreaks(e.response.toString());
+					}
+				});
+			}
+		}
+		private function unInitXMPP():void
+		{
+			if (_realtime != null && _realtime is XMPPConnection) {
+				_realtime.stop();
+				connectXMPPButton.label = "connect";
+				_realtime = null;
+			}
+		}
+		private function onConnectXMPP():void
+		{
+			initXMPP();
+			
+			if (_realtime.running) {
+				_realtime.stop();
+				connectXMPPButton.label = "connect";
+			} else {
+				_realtime.start();
+				connectXMPPButton.label = "disconnect";
+				_result = "XMPP connect";
+			}
+		}
+		private function onSubscribeXMPP():void
+		{
+			initXMPP();
 			
 			_realtime.subscribe(_accessKey, _accessSecret);
 		}
@@ -405,9 +473,18 @@ The copyrights embodied in the content of this file are licensed under the BSD (
 			<mx:Label text="Start Polling:" />
 			<mx:HBox>
 				<mx:Button id="recentPollButton" label="recent" click="onRecentPoll()" />
-				<mx:Button id="subscribeButton" label="subscribe user" click="onSubscribe()" />
+				<mx:Button id="subscribePollButton" label="add user" click="onSubscribePoll()" />
 				<mx:Label text="Delay(seconds):" />
 				<mx:TextInput id="pollTime" restrict="0123456789" text="10" />
+			</mx:HBox>
+			<mx:Label text="Start XMPP:" />
+			<mx:HBox>
+				<mx:Button id="connectXMPPButton" label="connect" click="onConnectXMPP()" />
+				<!--<mx:Button id="subscribeXMPPButton" label="subscribe user" click="onSubscribeXMPP()" />-->
+				<mx:Label text="Jid:" />
+				<mx:TextInput id="jidXMPP" text="{_jidXMPP}"/>
+				<mx:Label text="Password:"/>
+				<mx:TextInput id="passwordXMPP" displayAsPassword='true' text="{_passwordXMPP}"/>
 			</mx:HBox>
 			
 			<mx:Spacer height="5"/>
@@ -458,8 +535,8 @@ The copyrights embodied in the content of this file are licensed under the BSD (
 			<mx:VBox>
 				<mx:Label text="Result Format:" />
 				<mx:HBox>
-					<mx:RadioButton id="jsonRadio" label="JSON" selected="true" groupName="resultformat"/>
-					<mx:RadioButton label="XML" groupName="resultformat"/>
+					<mx:RadioButton id="jsonRadio" label="JSON" groupName="resultformat"/>
+					<mx:RadioButton label="XML" selected="true" groupName="resultformat"/>
 				</mx:HBox>
 			</mx:VBox>
 			<mx:VBox>
@@ -569,7 +646,7 @@ The copyrights embodied in the content of this file are licensed under the BSD (
 		
 		<mx:VBox width="100%" height="100%">
 			<mx:Label text="Result:" />
-			<mx:TextArea id="resultTxt" text="{_result}" wordWrap="false" width="100%" height="100%" />
+			<mx:TextArea id="resultTxt" text="{_result}" wordWrap="false" width="90%" height="90%" />
 		</mx:VBox>
 	</mx:HBox>		
 	

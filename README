@@ -4,11 +4,13 @@ fireeagleas3tester -- Flex app to for testing FireEagle* classes from fireeagle-
 Requires source:
 Fire Eagle AS3 classes: http://github.com/rcunning/fireeagle-as3/
 Yahoo! YOS lib: http://developer.yahoo.com/flash/yos/
+twhix lib: http://code.google.com/p/twhix/
 
 fireeagleas3tester setup:
 -Download fireeagleas3tester to <your extract path>
 -Download Fire Eagle AS3 classes to <your extract path>
 -Download YOS to <your extract path>
+-Download twhix to <your extract path>
 -Create a new workspace in Flex Builder 3+. 
 -Import fireeagleas3tester Flex project 
  -Right (or control) click in Flex Navigator, choose Import...
@@ -24,7 +26,7 @@ fireeagleas3tester setup:
 -Make sure all source paths map correctly
  -Right (or control) click on fireeagleas3tester project in Flex Navigator
  -Select Flex Build Path
- -Verify all paths are correct: src (FE AS3 classes), yos_as3_sdk (might have to change version)
+ -Verify all paths are correct: src (FE AS3 classes), yos_as3_sdk (might have to change version), twhix (might not be in /twhix-read-only)
 -Optionally init your OAuth values
  -Open fireeagleas3tester.mxml code edit in fireeagleas3tester project src
  -Edit 'init values for OAuth params' near top
