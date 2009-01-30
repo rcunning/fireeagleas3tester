@@ -80,7 +80,7 @@ The copyrights embodied in the content of this file are licensed under the BSD (
 		// need to save auth object between calls
 		private var _feAuth:FireEagleAuth = null;
 		
-		private var _realtime:IFireEagleSubscribe;
+		private var _realtime:IFireEagleRealtime;
 		
 		private function init():void
 		{
