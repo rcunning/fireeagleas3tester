@@ -10,6 +10,7 @@ The copyrights embodied in the content of this file are licensed under the BSD (
 		
 		import net.yahoo.fireeagle.*;
 		import net.yahoo.fireeagle.realtime.*;
+		import net.yahoo.fireeagle.data.*;
 		import com.yahoo.oauth.OAuthSignatureMethod_PLAINTEXT; // only used if you switch from the default SHA1 signature method
 		
 		// init values for OAuth params
@@ -209,21 +210,15 @@ The copyrights embodied in the content of this file are licensed under the BSD (
 			
 			if (_realtime == null) {
 				_realtime = new RecentPoller(_consumerKey, _consumerSecret, _generalKey, _generalSecret, 
-					Number(pollTime.text)*1000, jsonRadio.selected ? FireEagleConfig.FORMAT_JSON : FireEagleConfig.FORMAT_XML);
+					Number(pollTime.text)*1000, jsonRadio.selected ? JSONResponse : XMLResponse);
 				_realtime.addEventListener(FireEagleEvent.RECENT_SUCCESS, function(e:FireEagleEvent):void{
-					_result = "Recent Poll Success" + "\n\nresponse("+new Date().toString()+"):\n" + dumpObject(e.data);
-					if (e.response != null) {
-						_result += "\n\n"+formatWithLinebreaks(e.response.toString());
-					}
+					updateResponse("Recent Poll Success", e);
 				});
 				_realtime.addEventListener(FireEagleEvent.RECENT_FAILURE, function(e:FireEagleEvent):void{
 					_result = "Recent Poll Failure" + "\n\n" + dumpObject(e.data);
 				});
 				_realtime.addEventListener(FireEagleEvent.USER_SUCCESS, function(e:FireEagleEvent):void{
-					_result = "User Poll Success" + "\n\nresponse("+new Date().toString()+"):\n" + dumpObject(e.data);
-					if (e.response != null) {
-						_result += "\n\n"+formatWithLinebreaks(e.response.toString());
-					}
+					updateResponse("User Poll Success", e);
 				});
 				_realtime.addEventListener(FireEagleEvent.USER_FAILURE, function(e:FireEagleEvent):void{
 					_result = "User Poll Failure" + "\n\n" + dumpObject(e.data);
@@ -278,10 +273,7 @@ The copyrights embodied in the content of this file are licensed under the BSD (
 				_realtime.addEventListener(RealTimeEvent.XMPP_SESSION, f);
 				
 				_realtime.addEventListener(FireEagleEvent.USER_SUCCESS, function(e:FireEagleEvent):void{
-					_result = "User XMPP Update received" + "\n\nresponse("+new Date().toString()+"):\n" + dumpObject(e.data);
-					if (e.response != null) {
-						_result += "\n\n"+formatWithLinebreaks(e.response.toString());
-					}
+					updateResponse("User XMPP Update received", e);
 				});
 			}
 		}
@@ -349,6 +341,19 @@ The copyrights embodied in the content of this file are licensed under the BSD (
 		{
 			return s.split(",").join(",\n");
 		}
+		private function updateResponse(text:String, e:FireEagleEvent):void
+		{
+			_result = text + formatResponse(e);
+		}
+		private function formatResponse(e:FireEagleEvent):String
+		{
+			var s:String = "";
+				if (e.response != null) {
+					s += "\n\n"+formatWithLinebreaks(e.response.toString());
+				}
+				s += "\n\nresponse("+new Date().toString()+"):\n" + dumpObject(e.data);
+				return s;
+		}
 		
 		//
 		// FE method call setup helpers
@@ -359,7 +364,7 @@ The copyrights embodied in the content of this file are licensed under the BSD (
 				new FireEagleMethod(_consumerKey, _consumerSecret, 
 					generalKey ? _generalKey : _accessKey, 
 					generalKey ? _generalSecret : _accessSecret, 
-					jsonRadio.selected ? FireEagleConfig.FORMAT_JSON : FireEagleConfig.FORMAT_XML);
+					jsonRadio.selected ? JSONResponse : XMLResponse);
 			fe.fireRequestAutomatically = fireRequest;
 			if (!sha1Radio.selected) {
 				fe.signatureMethod = new OAuthSignatureMethod_PLAINTEXT();
@@ -373,10 +378,7 @@ The copyrights embodied in the content of this file are licensed under the BSD (
 		{
 			if (success.length) {
 				fe.addEventListener(success, function(e:FireEagleEvent):void{
-					_result = formatResult(text + " Success", fe) + "\n\nresponse("+new Date().toString()+"):\n" + dumpObject(e.data);
-					if (e.response != null) {
-						_result += "\n\n"+formatWithLinebreaks(e.response.toString());
-					}
+					_result = formatResult(text + " Success", fe) + formatResponse(e);
 				});
 			}
 			if (failure.length) {
