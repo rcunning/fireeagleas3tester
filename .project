@@ -19,12 +19,22 @@
 		<link>
 			<name>[source path] src</name>
 			<type>2</type>
-			<locationURI>FE_AS%33_TESTER/fireeagle-as%33/src</locationURI>
+			<locationURI>FE_SRC/fireeagle-as%33/src</locationURI>
+		</link>
+		<link>
+			<name>[source path] hurlant_tls</name>
+			<type>2</type>
+			<locationURI>FE_SRC/seesmic-as%33-xmpp-read-only/hurlant_tls</locationURI>
+		</link>
+		<link>
+			<name>[source path] seesmic-as3-xmpp</name>
+			<type>2</type>
+			<locationURI>FE_SRC/seesmic-as%33-xmpp-read-only/seesmic-as%33-xmpp</locationURI>
 		</link>
 		<link>
 			<name>[source path] Source</name>
 			<type>2</type>
-			<locationURI>FE_AS%33_TESTER/yos_as%33_sdk-1.1.1/Source</locationURI>
+			<locationURI>FE_SRC/yos_as%33_sdk-1.1.1/Source</locationURI>
 		</link>
 	</linkedResources>
 </projectDescription>
