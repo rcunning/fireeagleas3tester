@@ -62,4 +62,4 @@ Add SharedObject session store for OAuth values and XMPP login credentials
 Your best bet for help is to post a message to the Fire Eagle Yahoo! Group:
 [http://tech.groups.yahoo.com/group/fireeagle/](http://tech.groups.yahoo.com/group/fireeagle/ "Fire Eagle Yahoo! Group")
 
-See http://fireeagle.yahoo.net for more info.
+See [http://fireeagle.yahoo.net](http://fireeagle.yahoo.net "Fire Eagle") for more info.
