@@ -15,9 +15,9 @@ The copyrights embodied in the content of this file are licensed under the BSD (
 		
 		// init values for OAuth params
 		[Bindable]
-		private var _consumerKey:String = "";
+		private var _consumerKey:String = "YNqmPYEMEOzA";
 		[Bindable]
-		private var _consumerSecret:String = "";
+		private var _consumerSecret:String = "7W6t7UwHXhe7UtAVo2KO5VGbK6I1UjOS";
 		[Bindable]
 		private var _generalKey:String = "";
 		[Bindable]
@@ -26,6 +26,8 @@ The copyrights embodied in the content of this file are licensed under the BSD (
 		private var _accessKey:String = "";
 		[Bindable]
 		private var _accessSecret:String = "";
+		[Bindable]
+		private var _oauthVerifier:String = "";
 		// xmpp credentials
 		[Bindable]
 		private var _jidXMPP:String = "";
@@ -128,7 +130,7 @@ The copyrights embodied in the content of this file are licensed under the BSD (
 				_accessSecret = _feAuth.accessSecret;
 			});
 			
-			_feAuth.convertToAccessToken();
+			_feAuth.convertToAccessToken(_oauthVerifier);
 			
 			updateResult(FireEagleConfig.ACCESS_TOKEN_NAME, _feAuth);
 		}
@@ -520,6 +522,12 @@ The copyrights embodied in the content of this file are licensed under the BSD (
 					<mx:VBox>
 						<mx:Label text="accessSecret" />
 						<mx:TextInput id="accessSecretTxt" text="{_accessSecret}" valueCommit="{_accessSecret = accessSecretTxt.text;}"/>
+					</mx:VBox>
+				</mx:HBox>
+				<mx:HBox>
+					<mx:VBox>
+						<mx:Label text="oauthVerifier" />
+						<mx:TextInput id="oauthVerifierTxt" text="{_oauthVerifier}" valueCommit="{_oauthVerifier = oauthVerifierTxt.text;}"/>
 					</mx:VBox>
 				</mx:HBox>
 				<mx:VBox>
